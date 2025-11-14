@@ -1,9 +1,31 @@
 import Stripe from "stripe";
 import { missingEnvVariableUrl } from "../utils";
 
-// Initialize Stripe SDK
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-11-20.acacia",
+// Lazy initialization of Stripe SDK
+let _stripe: Stripe | null = null;
+
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error(
+        missingEnvVariableUrl(
+          "STRIPE_SECRET_KEY",
+          "https://dashboard.stripe.com/apikeys"
+        )
+      );
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2024-11-20.acacia",
+    });
+  }
+  return _stripe;
+}
+
+// For backwards compatibility - use getStripe() in new code
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    return (getStripe() as any)[prop];
+  },
 });
 
 // Validate Stripe environment variables
