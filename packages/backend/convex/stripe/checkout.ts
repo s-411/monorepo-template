@@ -23,14 +23,18 @@ export const createCheckoutSession = action({
     // Get the price ID
     const priceId = getPriceId(priceKey as "PRO_MONTHLY" | "PRO_YEARLY");
 
-    // Get or create Stripe customer
-    const customer = await ctx.runQuery(
+    // Get or create Stripe customer (must use runAction since it calls Stripe API)
+    const customer = await ctx.runAction(
       internal.stripe.customers.getOrCreate,
       { userId, email, name: identity.name }
     );
 
-    // Get site URL with fallback
-    const siteUrl = process.env.SITE_URL || "http://localhost:5173";
+    if (!customer) {
+      throw new Error("Failed to create customer");
+    }
+
+    // Get site URL with fallback (updated default port to 5174)
+    const siteUrl = process.env.SITE_URL || "http://localhost:5174";
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
@@ -82,8 +86,8 @@ export const createPortalSession = action({
       throw new Error("No Stripe customer found");
     }
 
-    // Get site URL with fallback
-    const siteUrl = process.env.SITE_URL || "http://localhost:5173";
+    // Get site URL with fallback (updated default port to 5174)
+    const siteUrl = process.env.SITE_URL || "http://localhost:5174";
 
     // Create portal session
     const session = await stripe.billingPortal.sessions.create({

@@ -54,7 +54,9 @@ Webhooks keep your database in sync with Stripe events.
 
 #### 3.1 - Get Your Webhook URL
 
-**Format**: `https://YOUR_DEPLOYMENT_NAME.convex.cloud/stripe/webhook`
+⚠️ **IMPORTANT**: Webhook endpoints use `.convex.site` domain, NOT `.convex.cloud`!
+
+**Format**: `https://YOUR_DEPLOYMENT_NAME.convex.site/stripe/webhook`
 
 To find your deployment URL:
 ```bash
@@ -62,9 +64,14 @@ To find your deployment URL:
 cat packages/backend/.env.local
 # Look for: CONVEX_URL=https://your-deployment.convex.cloud
 
-# Webhook URL is:
-https://your-deployment.convex.cloud/stripe/webhook
+# Webhook URL uses .site instead of .cloud:
+https://your-deployment.convex.site/stripe/webhook
+#                            ^^^^
 ```
+
+**Example**:
+- API URL: `https://merry-warbler-241.convex.cloud` (for queries/mutations)
+- Webhook URL: `https://merry-warbler-241.convex.site/stripe/webhook` (for HTTP actions)
 
 #### 3.2 - Configure Webhook in Stripe
 
@@ -97,7 +104,7 @@ https://your-deployment.convex.cloud/stripe/webhook
 |--------------|-------|---------|
 | `STRIPE_SECRET_KEY` | Your secret key from Step 1 | `sk_test_xxx...` |
 | `STRIPE_WEBHOOK_SECRET` | Your webhook secret from Step 3 | `whsec_xxx...` |
-| `SITE_URL` (optional) | Your app URL | `http://localhost:5173` or production URL |
+| `SITE_URL` (optional) | Your app URL | `http://localhost:5174` or production URL |
 
 **Optional Price IDs** (can also hardcode in config):
 | Variable Name | Value |
@@ -365,7 +372,7 @@ import Pricing from './pages/Pricing'
 ### 4. Update Webhook
 
 1. Create new webhook endpoint for production
-2. Use production URL: `https://your-production-deployment.convex.cloud/stripe/webhook`
+2. Use production URL: `https://your-production-deployment.convex.site/stripe/webhook` (note `.site` not `.cloud`)
 3. Copy new live webhook secret
 
 ---
@@ -384,8 +391,15 @@ import Pricing from './pages/Pricing'
 - ✅ User needs to complete checkout first
 - ✅ Check webhook events are being received (Stripe dashboard → Webhooks → click your endpoint → see logs)
 
-### Webhook not receiving events
-- ✅ Check webhook URL is correct
+### Webhook not receiving events (Returns 404)
+- ✅ **Check webhook URL uses `.convex.site` NOT `.convex.cloud`**
+  - ❌ Wrong: `https://your-deployment.convex.cloud/stripe/webhook`
+  - ✅ Correct: `https://your-deployment.convex.site/stripe/webhook`
+- ✅ Test webhook endpoint with curl:
+  ```bash
+  curl -X POST https://your-deployment.convex.site/stripe/webhook
+  # Should return "No signature" (HTTP 400), not 404
+  ```
 - ✅ Check Convex is deployed and running
 - ✅ Check webhook secret is added to Convex environment variables
 - ✅ Test webhook with Stripe CLI: `stripe listen --forward-to your-webhook-url`

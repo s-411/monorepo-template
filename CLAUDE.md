@@ -444,10 +444,18 @@ If you see TypeScript errors when building, the build script uses `vite build` (
 - Verify `CLERK_ISSUER_URL` in Convex matches Clerk JWT template
 - Check that publishable key is correct in app `.env.local`
 
-### Stripe webhook fails
+### Stripe webhook fails (Returns 404)
 
+**CRITICAL**: Webhook endpoints use `.convex.site` domain, NOT `.convex.cloud`
+
+- ❌ Wrong: `https://your-deployment.convex.cloud/stripe/webhook`
+- ✅ Correct: `https://your-deployment.convex.site/stripe/webhook`
 - Verify webhook secret in Convex environment variables
-- Ensure webhook endpoint URL is correct: `https://your-deployment.convex.cloud/stripe/webhook`
+- Test webhook endpoint:
+  ```bash
+  curl -X POST https://your-deployment.convex.site/stripe/webhook
+  # Should return "No signature" (HTTP 400), not 404
+  ```
 - Check Stripe dashboard → Webhooks for delivery attempts and errors
 
 ### General debugging steps
@@ -481,6 +489,7 @@ If you encounter issues after cloning:
 
 ## Additional Resources
 
+- [BUILD_ROADMAP.md](./docs/BUILD_ROADMAP.md) - Complete 10-phase guide from start to App Store
 - [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) - Comprehensive troubleshooting guide with setup fixes
 - [ENV_MASTER.md](./ENV_MASTER.md) - Complete environment variable guide
 - [STRIPE_SETUP.md](./STRIPE_SETUP.md) - Stripe integration guide

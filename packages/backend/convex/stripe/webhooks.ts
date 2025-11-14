@@ -5,7 +5,8 @@ import { stripe } from "./config";
 
 /**
  * Stripe Webhook Handler
- * Endpoint: https://your-deployment.convex.cloud/stripe/webhook
+ * IMPORTANT: Webhook endpoint uses .convex.site domain, NOT .convex.cloud
+ * Endpoint: https://your-deployment.convex.site/stripe/webhook
  *
  * Configure in Stripe Dashboard → Webhooks → Add endpoint
  * Events to select:
@@ -32,7 +33,12 @@ export const webhook = httpAction(async (ctx, request) => {
 
   try {
     const body = await request.text();
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    // Use constructEventAsync for async webhook verification
+    event = await stripe.webhooks.constructEventAsync(
+      body,
+      signature,
+      webhookSecret
+    );
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
     return new Response("Webhook signature verification failed", {
@@ -149,9 +155,23 @@ async function handleSubscriptionChange(
     return;
   }
 
-  const price = subscription.items.data[0]?.price;
+  const subscriptionItem = subscription.items.data[0];
+  if (!subscriptionItem) {
+    console.error("No subscription item found in subscription");
+    return;
+  }
+
+  const price = subscriptionItem.price;
   if (!price) {
-    console.error("No price found in subscription");
+    console.error("No price found in subscription item");
+    return;
+  }
+
+  // In Stripe API version 2025-02-24.acacia and later,
+  // current_period_end moved from subscription root to subscription items
+  const currentPeriodEnd = subscriptionItem.current_period_end;
+  if (!currentPeriodEnd) {
+    console.error("No current_period_end found in subscription item");
     return;
   }
 
@@ -162,7 +182,7 @@ async function handleSubscriptionChange(
     stripePriceId: price.id,
     stripeProductId: price.product as string,
     status: subscription.status,
-    currentPeriodEnd: subscription.current_period_end,
+    currentPeriodEnd: currentPeriodEnd,
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
   });
 }

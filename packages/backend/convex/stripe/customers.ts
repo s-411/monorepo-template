@@ -1,6 +1,12 @@
-import { internalMutation, internalQuery, query } from "../_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  query,
+  internalAction,
+} from "../_generated/server";
 import { v } from "convex/values";
 import { stripe } from "./config";
+import { internal } from "../_generated/api";
 
 /**
  * Get customer by Clerk user ID
@@ -33,25 +39,25 @@ export const getByStripeId = internalQuery({
 /**
  * Get or create a Stripe customer
  * This is called from checkout flow
+ * NOTE: This MUST be an action because it calls the Stripe API
  */
-export const getOrCreate = internalQuery({
+export const getOrCreate = internalAction({
   args: {
     userId: v.string(),
     email: v.string(),
     name: v.optional(v.string()),
   },
   handler: async (ctx, { userId, email, name }) => {
-    // Check if customer already exists
-    const existing = await ctx.db
-      .query("customers")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
+    // Check if customer already exists (must use runQuery in actions)
+    const existing = await ctx.runQuery(internal.stripe.customers.getByUserId, {
+      userId,
+    });
 
     if (existing) {
       return existing;
     }
 
-    // Create new Stripe customer
+    // Create new Stripe customer (this requires an action, not a query)
     const stripeCustomer = await stripe.customers.create({
       email,
       name,
@@ -60,15 +66,20 @@ export const getOrCreate = internalQuery({
       },
     });
 
-    // Save to database
-    const customerId = await ctx.db.insert("customers", {
+    // Save to database (must use runMutation in actions)
+    await ctx.runMutation(internal.stripe.customers.upsert, {
       userId,
       stripeCustomerId: stripeCustomer.id,
       email,
       name,
     });
 
-    return await ctx.db.get(customerId);
+    // Get and return the customer
+    const customer = await ctx.runQuery(internal.stripe.customers.getByUserId, {
+      userId,
+    });
+
+    return customer;
   },
 });
 
