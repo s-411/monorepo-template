@@ -4,6 +4,8 @@
 
 A production-ready monorepo template for building modern fullstack applications with shared backend logic between web and native platforms.
 
+Hi
+
 ## Tech Stack
 
 - **[Turborepo](https://turbo.build/)**: Monorepo orchestration with workspace management
