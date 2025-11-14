@@ -1,1386 +1,483 @@
-# 🚀 Build Roadmap: From Template to Production App
+# 🚀 Build Roadmap: From Template to App Store
 
-This is your step-by-step guide for building a production app from this template. Follow these phases in order for the smoothest development experience.
-
----
-
-## Overview: The 10 Phases
-
-1. **Foundation & Planning** - Design everything, plan the database
-2. **UI Shell** - Build all pages as static UI (no data yet)
-3. **Backend Implementation** - Create database schema and functions
-4. **Feature Implementation** - Connect UI to backend, one feature at a time
-5. **Monetization** - Add subscription paywalls (optional)
-6. **Onboarding Flow** - Build the first-time user experience (CRITICAL)
-7. **Testing & Refinement** - User testing, analytics, A/B testing
-8. **Production Deployment** - Deploy to production (web + backend)
-9. **Mobile App Deployment** - Submit to App Store and Google Play
-10. **Post-Launch** - Monitor, iterate, and improve
-
-**Time Estimate**: 3-6 weeks from start to App Store submission, depending on complexity.
+Your simple step-by-step guide for building a mobile app from this template.
 
 ---
 
-## Phase 1: Foundation & Planning (Do This First)
+## Phase 0: Preview Setup
 
-**Goal**: Have a complete plan before writing any code.
+Get your mobile development environment ready so you can see what you're building.
 
-### Step 1.1: Export ALL Design Screens
+**0.1** - Install Expo Go app on your phone (from App Store or Google Play)
 
-If you're using a design tool (Figma, Sleek.Design, etc.):
+**0.2** - Start the template: `cd apps/native && npm run dev`
 
-1. **Export all screens as code** (React components if available)
-   - Web version
-   - Mobile version (if building native app)
-2. **Organize exports** in a temporary folder:
-   ```
-   /design-exports/
-     web/
-       home.tsx
-       dashboard.tsx
-       feature-list.tsx
-       analytics.tsx
-     mobile/
-       HomeScreen.tsx
-       DashboardScreen.tsx
-       FeatureListScreen.tsx
-   ```
+**0.3** - Scan the QR code with your phone to see the app running
 
-**If you don't have designs yet**: Skip to Step 1.2 and work with wireframes or text descriptions.
+**0.4** - Optional: Set up iOS Simulator (Mac only) or Android Emulator to preview on desktop
+
+**Why this matters**: You need to actually see your mobile app as you build it. Desktop simulator is fast for quick checks, but your real phone shows the true experience.
 
 ---
 
-### Step 1.2: Database Schema Planning Session
+## Phase 1: Foundation Setup
 
-**This is the most important step.** Get this right and everything else is easy.
+Clone the template and get all the essential services connected.
 
-#### Open a Planning Session with Claude Code
+**1.1** - Clone this template repo: `git clone [your-repo-url]`
 
-Share ALL your design screens (or wireframes) and walk through:
+**1.2** - Install everything: `npm install` from the root folder
 
-**1. User Journeys**
-- "User creates an entry → saves data → sees it on the list page"
-- "User views analytics → filters by date range → sees insights"
-- "User sets goals → tracks progress → gets notifications"
+**1.3** - Set up Clerk authentication:
+- Create account at clerk.com
+- Create new application
+- Enable Google and Apple social login (required for mobile)
+- Copy publishable key and issuer URL
 
-**2. Data Inputs** (What information does the user enter?)
-- Example: "They enter: title, date, rating (1-5), category, notes, optional photo"
+**1.4** - Set up Convex backend:
+- Run `npm run setup --workspace packages/backend`
+- This creates your database and gives you a URL
+- Copy the Convex URL from `packages/backend/.env.local`
 
-**3. Data Connections** (What data does each page need?)
-- Example: "Analytics page needs: all user entries grouped by week, average ratings, most common category"
+**1.5** - Set up Stripe payments (optional but recommended):
+- Create account at stripe.com
+- Get your test keys (publishable and secret)
+- Create two products: Monthly ($10) and Yearly ($100)
+- Save the price IDs
 
-**4. Relationships** (How does data connect?)
-- "Each entry belongs to one user"
-- "Each user has multiple entries"
-- "Each user has one settings record"
-- "Each user has one subscription record (via Stripe integration)"
+**1.6** - Add environment variables:
+- Create `apps/native/.env.local` with your Clerk and Convex keys
+- Add Stripe keys to Convex dashboard
+- See ENV_MASTER.md for the complete list
 
-#### Output: Complete Database Schema
+**1.7** - Test it works:
+- Start the app: `npm run dev` from root
+- Sign in with Google or Apple on your phone
+- You should see the dashboard screen
 
-Claude will create a `schema.ts` file with all tables, fields, indexes, and relationships.
-
-**Example Schema Structure** (your actual schema will be different):
-```typescript
-// Example - yours will be specific to your app
-export default defineSchema({
-  entries: defineTable({
-    userId: v.string(),
-    title: v.string(),
-    date: v.number(), // timestamp
-    rating: v.number(), // 1-5
-    category: v.string(),
-    notes: v.optional(v.string()),
-  })
-    .index("by_user", ["userId"])
-    .index("by_date", ["userId", "date"]),
-
-  goals: defineTable({
-    userId: v.string(),
-    targetCount: v.number(),
-    period: v.string(), // "daily", "weekly", "monthly"
-  })
-    .index("by_user", ["userId"]),
-});
-```
-
-**Save this schema** - you'll implement it in Phase 3.
+**Why this matters**: Everything needs to be connected before you start building your actual app. Get this right once and you won't have to think about it again.
 
 ---
 
-## Phase 2: UI Shell (Static Pages Only)
+## Phase 2: Design Upload
 
-**Goal**: Build the entire UI without any backend connections. Just static pages.
+Upload all your app screens from Sleek.Design (or wherever you designed them).
 
-### Step 2.1: Create All Pages at Once
+**2.1** - Export all screens from Sleek.Design as React Native code
 
-Convert ALL design exports (or wireframes) to React components:
+**2.2** - Create a folder: `apps/native/src/screens/imported/`
 
-**Web App** (`apps/web/src/pages/`):
-```
-YourFeature.tsx
-FeatureList.tsx
-Analytics.tsx
-Settings.tsx
-```
+**2.3** - Copy all exported screen files into this folder
 
-**Mobile App** (`apps/native/src/screens/`):
-```
-YourFeatureScreen.tsx
-FeatureListScreen.tsx
-AnalyticsScreen.tsx
-SettingsScreen.tsx
-```
+**2.4** - Create a simple list somewhere to see all your screens:
+- This helps you visualize what you're building
+- Just a temporary navigation list
 
-**Important**:
-- ✅ Make them completely static
-- ✅ Use hardcoded mock data
-- ✅ Focus on layout, styling, components
-- ❌ No Convex queries/mutations yet
-- ❌ No form submissions
-- ❌ No real data
-
-**Example Static Page**:
-```tsx
-export default function FeatureList() {
-  // Mock data for now
-  const mockData = [
-    { id: 1, title: "Example Entry", date: "2025-01-15", rating: 4 },
-    { id: 2, title: "Another Entry", date: "2025-01-14", rating: 5 },
-  ];
-
-  return (
-    <div>
-      <h1>My Entries</h1>
-      {mockData.map(item => (
-        <div key={item.id}>
-          <h3>{item.title}</h3>
-          <p>{item.date} - Rating: {item.rating}/5</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-```
+**Why this matters**: You designed the app for a reason. Having all the screens ready means you can focus on making them work, not designing them from scratch.
 
 ---
 
-### Step 2.2: Set Up Routing
+## Phase 3: Planning Conversation with Claude
 
-Add all routes so you can navigate between pages (even if they don't do anything yet).
+Have a detailed conversation with Claude Code about your app structure.
 
-**Web** (`apps/web/src/App.tsx`):
-```tsx
-<Routes>
-  <Route path="/" element={<Home />} />
-  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-  <Route path="/entries" element={<ProtectedRoute><FeatureList /></ProtectedRoute>} />
-  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-  <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-</Routes>
-```
+**3.1** - Open Claude Code and share all your imported screens
 
-**Mobile** (`apps/native/src/navigation/Navigation.tsx`):
-```tsx
-<Stack.Navigator>
-  <Stack.Screen name="Login" component={LoginScreen} />
-  <Stack.Screen name="Dashboard" component={DashboardScreen} />
-  <Stack.Screen name="FeatureList" component={FeatureListScreen} />
-  <Stack.Screen name="Analytics" component={AnalyticsScreen} />
-</Stack.Navigator>
-```
+**3.2** - Walk through each user journey:
+- "User opens app → sees this screen → taps this button → goes here"
+- "User creates a [thing] → fills out this form → saves → sees it in the list"
 
----
+**3.3** - Explain all the data:
+- What information does the user enter?
+- What does each screen need to display?
+- How does data connect between screens?
 
-### Why Build All Pages at Once?
+**3.4** - Ask Claude to design your database schema:
+- Claude will create tables, fields, and relationships
+- This goes in `packages/backend/convex/schema.ts`
 
-1. **See the full app flow** - Navigate through the entire app
-2. **Spot design inconsistencies** - Notice patterns, repeated components
-3. **Better database planning** - You already did this in Phase 1, but seeing it visually helps
-4. **Parallel work** - You (or team members) can work on styling while planning backend
-5. **Motivating** - You can "use" the app even though it's not real yet
+**3.5** - Review and approve the schema:
+- Make sure it covers all your app's needs
+- This is the foundation everything else builds on
+
+**Why this matters**: This is the most important phase. Get the database right and everything else is easy. Get it wrong and you'll be refactoring for weeks. Claude needs to understand your entire app vision to build the right structure.
 
 ---
 
-## Phase 3: Backend Implementation
+## Phase 4: Build Static Screens
 
-**Goal**: Create the database schema and all backend functions.
+Turn all your imported designs into actual app screens that you can navigate between.
 
-### Step 3.1: Implement Convex Schema
+**4.1** - Create screen files in `apps/native/src/screens/`:
+- Move each imported screen from the temporary folder
+- Set up React Navigation to connect them all
 
-Add the schema you planned in Phase 1 to `packages/backend/convex/schema.ts`.
+**4.2** - Use hardcoded fake data:
+- If a screen shows a list, use 3-5 fake items
+- If it shows user info, make up a fake name and email
+- Don't connect to the database yet
 
-**Example**:
-```typescript
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+**4.3** - Add all navigation:
+- Every button should go to the right screen
+- You should be able to tap through your entire app
 
-export default defineSchema({
-  entries: defineTable({
-    userId: v.string(),
-    title: v.string(),
-    date: v.number(),
-    rating: v.number(),
-    category: v.string(),
-    notes: v.optional(v.string()),
-  })
-    .index("by_user", ["userId"])
-    .index("by_date", ["userId", "date"]),
+**4.4** - Test the complete flow:
+- Navigate through every screen
+- Make sure nothing crashes
+- Verify all the designs look right on your phone
 
-  goals: defineTable({
-    userId: v.string(),
-    targetCount: v.number(),
-    period: v.string(),
-  })
-    .index("by_user", ["userId"]),
-
-  // Stripe tables already exist: customers, subscriptions
-});
-```
+**Why this matters**: Now you can actually "use" your app even though it doesn't save any real data yet. This helps you spot design problems and understand the full user experience before worrying about databases.
 
 ---
 
-### Step 3.2: Create Convex Functions
+## Phase 5: Build the Backend
 
-Create files for each table with CRUD operations.
+Implement the database schema and create all the backend functions.
 
-**Example** (`packages/backend/convex/entries.ts`):
-```typescript
-import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+**5.1** - Add the schema Claude designed to `packages/backend/convex/schema.ts`
 
-// GET: List all entries for current user
-export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+**5.2** - Create backend files for each data type:
+- Example: `entries.ts`, `goals.ts`, `analytics.ts`
+- Each file has functions to get, create, update, and delete data
 
-    return await ctx.db
-      .query("entries")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
-      .order("desc") // newest first
-      .collect();
-  },
-});
+**5.3** - Ask Claude to write these files:
+- Share your schema
+- Describe what each function should do
+- Claude will write all the backend code
 
-// CREATE: Add new entry
-export const create = mutation({
-  args: {
-    title: v.string(),
-    date: v.number(),
-    rating: v.number(),
-    category: v.string(),
-    notes: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+**5.4** - Test in Convex dashboard:
+- Go to dashboard.convex.dev
+- Run your functions manually
+- Verify they work before connecting to the app
 
-    const entryId = await ctx.db.insert("entries", {
-      userId: identity.subject,
-      ...args,
-    });
-
-    return entryId;
-  },
-});
-
-// UPDATE: Edit existing entry
-export const update = mutation({
-  args: {
-    id: v.id("entries"),
-    title: v.optional(v.string()),
-    rating: v.optional(v.number()),
-    notes: v.optional(v.string()),
-  },
-  handler: async (ctx, { id, ...updates }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    // Verify ownership
-    const entry = await ctx.db.get(id);
-    if (!entry || entry.userId !== identity.subject) {
-      throw new Error("Not found or unauthorized");
-    }
-
-    await ctx.db.patch(id, updates);
-  },
-});
-
-// DELETE: Remove entry
-export const remove = mutation({
-  args: { id: v.id("entries") },
-  handler: async (ctx, { id }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const entry = await ctx.db.get(id);
-    if (!entry || entry.userId !== identity.subject) {
-      throw new Error("Not found or unauthorized");
-    }
-
-    await ctx.db.delete(id);
-  },
-});
-```
-
-**Create similar files for each table**:
-- `entries.ts`
-- `goals.ts`
-- `analytics.ts` (if you have computed data/aggregations)
+**Why this matters**: The backend is separate from the app screens. Build it completely and test it separately. Then connecting them is just a simple step.
 
 ---
 
-## Phase 4: Connect UI to Backend (One Feature at a Time)
+## Phase 6: Connect Screens to Backend
 
-**Goal**: Make the app functional by connecting one feature at a time.
+Replace the fake data with real database connections, one screen at a time.
 
-### Step 4.1: Start with Core Feature
+**6.1** - Start with the most important screen (usually "Create [Thing]"):
+- Replace fake form submission with real Convex mutation
+- Test: Create something → check Convex dashboard → see the data saved
 
-**Pick the most important feature** (usually "Create Entry" or similar).
+**6.2** - Connect the list screen next:
+- Replace fake array with Convex query
+- Test: See the thing you just created appear in the list
 
-Connect that ONE page to Convex:
+**6.3** - Connect detail screens:
+- Show real data for each item
+- Add edit and delete buttons
 
-**Example**: Make the "Add Entry" form work
+**6.4** - Connect the rest one by one:
+- Settings screen
+- Analytics screen
+- Any other screens
 
-**Before** (static):
-```tsx
-export default function AddEntry() {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted"); // Does nothing
-  };
+**6.5** - Test the complete flow after each connection:
+- Don't move to the next screen until the current one works perfectly
 
-  return <form onSubmit={handleSubmit}>...</form>;
-}
-```
-
-**After** (connected):
-```tsx
-import { useMutation } from "convex/react";
-import { api } from "@packages/backend/convex/_generated/api";
-
-export default function AddEntry() {
-  const createEntry = useMutation(api.entries.create);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-
-    await createEntry({
-      title: formData.get("title"),
-      date: Date.now(),
-      rating: Number(formData.get("rating")),
-      category: formData.get("category"),
-      notes: formData.get("notes") || undefined,
-    });
-
-    // Show success message, redirect, etc.
-  };
-
-  return <form onSubmit={handleSubmit}>...</form>;
-}
-```
-
-**Test it end-to-end**:
-1. Fill out the form
-2. Submit
-3. Check Convex dashboard - see the data in the database
-4. Go to the list page - see the data appear
+**Why this matters**: Doing one screen at a time means you always know what broke if something stops working. It's also motivating to see features come alive one by one.
 
 ---
 
-### Step 4.2: Add Features Incrementally
+## Phase 7: Add Paywalls
 
-Connect features one at a time in priority order:
+Add subscription paywalls to monetize your app (if you set up Stripe).
 
-1. **Core feature** (create/add)
-2. **List view** (show all entries)
-3. **Detail view** (show one entry)
-4. **Edit/Delete** (modify entries)
-5. **Analytics/Insights** (computed data)
-6. **Settings** (user preferences)
-7. **Advanced features** (search, filters, export, etc.)
+**7.1** - Decide what's free vs paid:
+- Free: Basic features, limited usage
+- Pro: Advanced features, unlimited usage
 
-**Example**: Connect List View
+**7.2** - Add paywall screens:
+- Use the Stripe components that are already in the template
+- Show benefits of upgrading
+- Add "Start Free Trial" button
 
-```tsx
-import { useQuery } from "convex/react";
-import { api } from "@packages/backend/convex/_generated/api";
+**7.3** - Lock pro features:
+- Check subscription status before showing pro screens
+- Show upgrade prompt if user is free tier
 
-export default function FeatureList() {
-  const entries = useQuery(api.entries.list);
+**7.4** - Test the payment flow:
+- Use Stripe test card: 4242 4242 4242 4242
+- Complete checkout
+- Verify subscription appears in Convex and Stripe dashboards
 
-  if (!entries) return <div>Loading...</div>;
-
-  return (
-    <div>
-      <h1>My Entries</h1>
-      {entries.map(entry => (
-        <div key={entry._id}>
-          <h3>{entry.title}</h3>
-          <p>{new Date(entry.date).toLocaleDateString()} - Rating: {entry.rating}/5</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-```
+**Why this matters**: If you plan to make money, build the payment system before onboarding. That way you can test the entire flow including payments.
 
 ---
 
-### Why One Feature at a Time?
+## Phase 8: Build Onboarding
 
-- ✅ You can test as you go
-- ✅ Easier to debug (you know what you just changed)
-- ✅ You'll see patterns and can copy-paste similar implementations
-- ✅ You ship working features incrementally
-- ✅ Less overwhelming than trying to do everything at once
+Create the first-time user experience that gets people using your app.
 
----
+**8.1** - Design 15-20 onboarding screens:
+- Welcome + value proposition (2-3 screens)
+- Collect user preferences (5-7 screens)
+- Explain key features (5-7 screens)
+- Show paywall with free trial offer (1 screen)
+- Final confirmation screen
 
-## Phase 5: Monetization (Optional)
+**8.2** - Build onboarding screens in `apps/native/src/screens/onboarding/`
 
-**Goal**: Add subscription paywalls to monetize your app.
+**8.3** - Add onboarding routing logic:
+- New users see onboarding first
+- After completing, they see the main app
+- Returning users skip straight to the main app
 
-### Step 5.1: Define Free vs Pro Features
+**8.4** - Track completion in database:
+- Add `onboardingCompleted` field to users table
+- Set to true when they finish
 
-**Free Tier**:
-- Basic feature creation (e.g., up to 10 entries/month)
-- View list of entries
-- Basic insights
+**8.5** - Test the full user journey:
+- Sign up as new user
+- Go through all onboarding screens
+- Hit the paywall
+- Land in the main app
+- Sign out and back in (should skip onboarding)
 
-**Pro Tier** ($10/month):
-- Unlimited entries
-- Advanced analytics
-- Export data (CSV, PDF)
-- Custom categories/tags
-- Priority support
-
----
-
-### Step 5.2: Add Paywalls
-
-Use the existing Stripe integration (already in template).
-
-**Check Subscription Status**:
-```tsx
-import { useQuery } from "convex/react";
-import { api } from "@packages/backend/convex/_generated/api";
-
-export default function AdvancedAnalytics() {
-  const subscription = useQuery(api.stripe.subscriptions.getCurrentUserSubscription);
-  const hasActiveSubscription = subscription?.status === "active";
-
-  if (!hasActiveSubscription) {
-    return (
-      <div className="paywall">
-        <h2>Unlock Advanced Analytics</h2>
-        <p>Upgrade to Pro to see detailed insights, trends, and export your data.</p>
-        <CheckoutButton priceKey="PRO_MONTHLY">
-          Upgrade to Pro - $10/month
-        </CheckoutButton>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {/* Advanced analytics content */}
-    </div>
-  );
-}
-```
-
-**Create Helper Hook** (optional):
-```tsx
-// hooks/useSubscription.ts
-import { useQuery } from "convex/react";
-import { api } from "@packages/backend/convex/_generated/api";
-
-export function useSubscription() {
-  const subscription = useQuery(api.stripe.subscriptions.getCurrentUserSubscription);
-
-  return {
-    isLoading: subscription === undefined,
-    isPro: subscription?.status === "active",
-    subscription,
-  };
-}
-
-// Usage in components:
-const { isPro, isLoading } = useSubscription();
-```
-
-**Gate Features at Backend Level**:
-```typescript
-// packages/backend/convex/analytics.ts
-export const advancedInsights = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    // Check subscription
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
-      .first();
-
-    if (!subscription || subscription.status !== "active") {
-      throw new Error("Pro subscription required");
-    }
-
-    // Return advanced analytics...
-  },
-});
-```
+**Why this matters**: Great onboarding gets 70-90% of people into your app. Bad onboarding loses them before they even see what you built. This determines whether your app succeeds or fails.
 
 ---
 
-## Phase 6: Onboarding Flow (CRITICAL)
+## Phase 9: Testing & Polish
 
-**Goal**: Build the first-time user experience that gets 90% of users into the app.
+Get real people to use your app and fix what's broken or confusing.
 
-> **Why This Matters**: You could build the best app in the world, but if only 20% of people complete onboarding, 80% will never see it. Conversely, epic onboarding with 90% completion means most users actually experience your app. **Onboarding determines your monetization success.**
+**9.1** - Test with 5-10 real people (friends, family, beta users):
+- Watch them use the app
+- Note where they get confused
+- Ask what's unclear
 
-### Why Build Onboarding AFTER the Core App?
+**9.2** - Add analytics tracking:
+- Use Posthog or Mixpanel
+- Track: signups, onboarding completion, paywall views, subscriptions
 
-**The Onboarding Dilemma**:
-- Onboarding comes first in the user journey
-- But it depends on understanding what you're onboarding people TO
-- And it needs to collect data that feeds into your database
+**9.3** - Fix the obvious problems:
+- Bugs that crash the app
+- Confusing screens
+- Steps where people quit
 
-**The Solution**: Build onboarding after the core app is functional.
+**9.4** - Polish the experience:
+- Add loading states
+- Add error messages
+- Make buttons more obvious
+- Speed up slow screens
 
-**Reasons**:
-1. ✅ You know what data the app needs
-2. ✅ You've built the screens users will eventually reach
-3. ✅ Database schema exists to store onboarding data
-4. ✅ You understand the user journey inside the app
-5. ✅ You avoid rework (if you change the app, you'd have to rebuild onboarding)
-
----
-
-### Step 6.1: Design Onboarding Flow
-
-**Before writing code**, design the complete onboarding experience:
-
-**Map out 20-30 steps** (typical for conversion-optimized onboarding):
-
-**Example Onboarding Flow** (adapt to your app):
-```
-1-2:   Welcome screens + value proposition
-3-5:   Collect basic user info (name, goals, preferences)
-6-10:  Explain key features with interactive demos
-11-15: Collect detailed preferences/settings
-16-18: Show social proof (testimonials, ratings)
-19:    Paywall - "Start Free Trial" or "Upgrade to Pro"
-20:    Final confirmation → mark onboardingCompleted = true
-```
-
-**Design these screens in your design tool** (Figma, Sleek.Design):
-- Keep them visually distinct from the main app
-- Use progressive disclosure (one question per screen)
-- Include compelling visuals and copy
-- Test different paywall positions (A/B test later)
+**Why this matters**: You can't see your own app clearly anymore. Fresh eyes will spot problems you're blind to. Fix those before launching to the world.
 
 ---
 
-### Step 6.2: Database Preparation
-
-Add onboarding-related fields to your schema:
-
-```typescript
-// packages/backend/convex/schema.ts
-users: defineTable({
-  userId: v.string(),
-  onboardingCompleted: v.boolean(), // ← Key field!
-  onboardingStep: v.optional(v.number()), // Track progress
-  name: v.optional(v.string()),
-  // ... other fields collected during onboarding
-})
-  .index("by_user", ["userId"])
-  .index("by_onboarding_status", ["onboardingCompleted"]),
-
-// Table for onboarding-specific data
-userPreferences: defineTable({
-  userId: v.string(),
-  goal: v.optional(v.string()),
-  reminderTime: v.optional(v.string()),
-  notificationsEnabled: v.boolean(),
-  // ... preferences collected during onboarding
-})
-  .index("by_user", ["userId"]),
-```
-
-**Create Convex functions**:
-```typescript
-// packages/backend/convex/onboarding.ts
-export const completeOnboarding = mutation({
-  args: {
-    name: v.string(),
-    goal: v.string(),
-    preferences: v.object({...}),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    // Save user data
-    await ctx.db.patch(userId, {
-      onboardingCompleted: true,
-      name: args.name,
-    });
-
-    // Save preferences
-    await ctx.db.insert("userPreferences", {
-      userId: identity.subject,
-      ...args.preferences,
-    });
-  },
-});
-
-export const getOnboardingStatus = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
-      .first();
-
-    return {
-      completed: user?.onboardingCompleted ?? false,
-      currentStep: user?.onboardingStep ?? 0,
-    };
-  },
-});
-```
-
----
-
-### Step 6.3: Build Onboarding Pages
-
-Create a separate folder for onboarding:
-
-**Web** (`apps/web/src/pages/onboarding/`):
-```
-Welcome.tsx          // Step 1: Welcome
-Goals.tsx            // Step 2: Set goals
-Preferences.tsx      // Step 3: Preferences
-Features.tsx         // Step 4-5: Feature walkthrough
-Paywall.tsx          // Step 6: Upgrade prompt
-Complete.tsx         // Step 7: Completion
-```
-
-**Mobile** (`apps/native/src/screens/onboarding/`):
-```
-WelcomeScreen.tsx
-GoalsScreen.tsx
-PreferencesScreen.tsx
-FeaturesScreen.tsx
-PaywallScreen.tsx
-CompleteScreen.tsx
-```
-
-**Example Onboarding Screen**:
-```tsx
-// apps/web/src/pages/onboarding/Goals.tsx
-import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "@packages/backend/convex/_generated/api";
-import { useNavigate } from "react-router-dom";
-
-export default function Goals() {
-  const [goal, setGoal] = useState("");
-  const saveProgress = useMutation(api.onboarding.saveStep);
-  const navigate = useNavigate();
-
-  const handleNext = async () => {
-    await saveProgress({ step: 2, data: { goal } });
-    navigate("/onboarding/preferences");
-  };
-
-  return (
-    <div className="onboarding-container">
-      <h1>What's your main goal?</h1>
-      <div className="goal-options">
-        <button onClick={() => setGoal("improve")}>
-          Improve my habits
-        </button>
-        <button onClick={() => setGoal("track")}>
-          Track my progress
-        </button>
-        <button onClick={() => setGoal("understand")}>
-          Understand patterns
-        </button>
-      </div>
-      <button onClick={handleNext} disabled={!goal}>
-        Continue
-      </button>
-      <div className="progress-bar">Step 2 of 7</div>
-    </div>
-  );
-}
-```
-
----
-
-### Step 6.4: Onboarding Routing Logic
-
-Add smart routing to show onboarding only for new users:
-
-**Web** (`apps/web/src/App.tsx`):
-```tsx
-import { useQuery } from "convex/react";
-import { api } from "@packages/backend/convex/_generated/api";
-import { Navigate, Routes, Route } from "react-router-dom";
-import OnboardingFlow from "./pages/onboarding/OnboardingFlow";
-
-function App() {
-  const onboardingStatus = useQuery(api.onboarding.getOnboardingStatus);
-
-  // Show loading while checking onboarding status
-  if (onboardingStatus === undefined) {
-    return <div>Loading...</div>;
-  }
-
-  // New users → onboarding
-  // Returning users → main app
-  const hasCompletedOnboarding = onboardingStatus?.completed ?? false;
-
-  return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<Home />} />
-
-      {!hasCompletedOnboarding ? (
-        // First-time users see onboarding
-        <>
-          <Route path="/onboarding/*" element={<OnboardingFlow />} />
-          <Route path="*" element={<Navigate to="/onboarding/welcome" replace />} />
-        </>
-      ) : (
-        // Returning users see main app
-        <>
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/entries" element={<ProtectedRoute><FeatureList /></ProtectedRoute>} />
-          {/* ... other app routes */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </>
-      )}
-    </Routes>
-  );
-}
-```
-
-**Mobile** (`apps/native/src/navigation/Navigation.tsx`):
-```tsx
-import { useQuery } from "convex/react";
-import { api } from "@packages/backend/convex/_generated/api";
-
-export default function Navigation() {
-  const onboardingStatus = useQuery(api.onboarding.getOnboardingStatus);
-
-  if (onboardingStatus === undefined) {
-    return <LoadingScreen />;
-  }
-
-  const hasCompletedOnboarding = onboardingStatus?.completed ?? false;
-
-  return (
-    <NavigationContainer>
-      {!hasCompletedOnboarding ? (
-        <OnboardingNavigator />
-      ) : (
-        <AppNavigator />
-      )}
-    </NavigationContainer>
-  );
-}
-```
-
----
-
-### Step 6.5: Add Paywall to Onboarding
-
-**Integrate Stripe paywall** at the optimal point in onboarding (usually 60-80% through):
-
-```tsx
-// apps/web/src/pages/onboarding/Paywall.tsx
-import CheckoutButton from "@/components/stripe/CheckoutButton";
-import { useMutation } from "convex/react";
-import { api } from "@packages/backend/convex/_generated/api";
-import { useNavigate } from "react-router-dom";
-
-export default function Paywall() {
-  const completeOnboarding = useMutation(api.onboarding.completeOnboarding);
-  const navigate = useNavigate();
-
-  const handleSkip = async () => {
-    // User continues with free version
-    await completeOnboarding({ tier: "free" });
-    navigate("/dashboard");
-  };
-
-  return (
-    <div className="paywall-container">
-      <h1>Unlock Pro Features</h1>
-      <div className="benefits">
-        <div className="benefit">✓ Unlimited entries</div>
-        <div className="benefit">✓ Advanced analytics</div>
-        <div className="benefit">✓ Export your data</div>
-        <div className="benefit">✓ Priority support</div>
-      </div>
-
-      <div className="pricing">
-        <CheckoutButton
-          priceKey="PRO_MONTHLY"
-          onSuccess={() => navigate("/dashboard")}
-        >
-          Start 7-Day Free Trial - $10/month
-        </CheckoutButton>
-      </div>
-
-      <button className="skip-button" onClick={handleSkip}>
-        Continue with Free Version
-      </button>
-    </div>
-  );
-}
-```
-
----
-
-### Step 6.6: Test Complete User Flow
-
-**Test the entire journey**:
-
-1. **Sign up** with Clerk (new user)
-2. **Go through onboarding** (all 20-30 steps)
-3. **Hit the paywall** → test both "Upgrade" and "Skip" paths
-4. **Land in the main app** with `onboardingCompleted = true`
-5. **Sign out and sign back in** → should skip onboarding and go straight to app
-
-**Verify in Convex Dashboard**:
-- Check `users` table has `onboardingCompleted = true`
-- Check onboarding data was saved correctly
-- Check subscription was created (if they upgraded)
-
----
-
-## Phase 7: Testing & Refinement
-
-**Goal**: Optimize conversion and fix bugs before launch.
-
-### Step 7.1: User Testing
-
-**Test with 5-10 real people** (friends, family, beta users):
-
-**What to observe**:
-- Where do they get confused?
-- Which onboarding steps take too long?
-- Do they understand the value proposition?
-- At what point do they want to quit?
-- Does the paywall feel too early/late?
-
-**Tools**:
-- **Screen recording** (Loom, QuickTime) - watch them use the app
-- **Think-aloud protocol** - ask them to narrate their thoughts
-- **Post-test interview** - "What was confusing?" "Would you pay for this?"
-
----
-
-### Step 7.2: Add Analytics
-
-**Track user behavior** to identify drop-off points:
-
-**Integrate analytics** (choose one):
-- [Posthog](https://posthog.com/) (recommended - open source, privacy-friendly)
-- [Mixpanel](https://mixpanel.com/)
-- [Amplitude](https://amplitude.com/)
-
-**Key events to track**:
-```typescript
-// Example with Posthog
-analytics.track("onboarding_step_completed", {
-  step: 2,
-  stepName: "goals",
-  timeSpent: 15, // seconds
-});
-
-analytics.track("paywall_viewed", {
-  location: "onboarding",
-  step: 6,
-});
-
-analytics.track("subscription_started", {
-  plan: "PRO_MONTHLY",
-  source: "onboarding",
-});
-
-analytics.track("onboarding_completed", {
-  totalTime: 180, // seconds
-  tier: "free" | "pro",
-});
-```
-
-**Create funnel analysis**:
-- How many people start onboarding?
-- How many complete each step?
-- How many see the paywall?
-- How many convert to paid?
-- Where do most people drop off?
-
----
-
-### Step 7.3: A/B Test Paywalls
-
-**Test different variations** to maximize conversion:
-
-**Variables to test**:
-- Paywall position (step 5 vs step 7 vs step 10)
-- Pricing ($8/month vs $10/month vs $12/month)
-- Trial length (3 days vs 7 days vs 14 days)
-- Copy ("Start Free Trial" vs "Unlock Pro Features")
-- Benefits shown (3 vs 5 vs 7 bullet points)
-
-**Example A/B test**:
-```typescript
-// Randomly assign variant
-const variant = Math.random() < 0.5 ? "A" : "B";
-
-// Track which variant user saw
-analytics.track("paywall_variant_shown", {
-  variant,
-  priceShown: variant === "A" ? 8 : 10,
-});
-
-// Show different price based on variant
-const price = variant === "A" ? "PRICE_8_MONTHLY" : "PRICE_10_MONTHLY";
-```
-
-**Measure**:
-- Conversion rate (% who subscribe)
-- Revenue per user
-- Lifetime value (LTV)
-
----
-
-### Step 7.4: Iterate Based on Data
-
-**Make data-driven improvements**:
-
-1. **Fix drop-off points** - if 50% quit at step 5, simplify or remove it
-2. **Optimize paywall** - use the variant that converts best
-3. **Improve copy** - rewrite confusing instructions
-4. **Speed up onboarding** - reduce steps if it's too long
-5. **Add value** - show more benefits if conversion is low
-
-**Goal**: Get onboarding completion rate to **70-90%** and paywall conversion to **10-30%**.
-
----
-
-## Phase 8: Production Deployment
-
-**Goal**: Deploy your app to production (web + backend).
-
-### Step 8.1: Deploy Convex Backend to Production
-
-```bash
-cd packages/backend
-npx convex deploy
-```
-
-This creates a **production deployment** separate from your dev environment.
-
-**Copy the production URL** (e.g., `https://happy-animal-123.convex.cloud`)
-
----
-
-### Step 8.2: Update Production Environment Variables
-
-**In Convex Dashboard** (production environment):
-
-1. Go to Settings → Environment Variables
-2. Add all variables:
-   - `CLERK_ISSUER_URL` (production Clerk)
-   - `STRIPE_SECRET_KEY` (LIVE key, starts with `sk_live_`)
-   - `STRIPE_WEBHOOK_SECRET` (production webhook)
-   - `STRIPE_PRICE_ID_PRO_MONTHLY` (live price ID)
-   - `STRIPE_PRICE_ID_PRO_YEARLY` (live price ID)
-   - `SITE_URL` (your production domain, e.g., `https://myapp.com`)
-
----
-
-### Step 8.3: Switch Stripe to Live Mode
-
-1. **Stripe Dashboard** → Toggle "View test data" OFF
-2. **Create products and prices** in live mode (same as test mode)
-3. **Copy live price IDs** and update Convex env vars
-4. **Create webhook endpoint** for production:
-   - URL: `https://happy-animal-123.convex.site/stripe/webhook` (note `.site` not `.cloud`)
-   - Events: Same as before
-   - Copy webhook secret → add to Convex
-
-**Test with real card**:
-- Use your own card
-- Subscribe to verify checkout works
-- Check webhook events arrive
-- Cancel subscription to test cancellation flow
-
----
-
-### Step 8.4: Configure Production Clerk
-
-1. **Create production Clerk application** (or use the same one)
-2. **Update environment variables**:
-   - `CLERK_ISSUER_URL` → Add to Convex production
-   - `CLERK_PUBLISHABLE_KEY` → Will use in web app build
-3. **Add production domain** to Clerk allowed URLs
-
----
-
-### Step 8.5: Build and Deploy Web App
-
-**Build static site** with production Convex URL:
-
-```bash
-cd packages/backend
-npx convex deploy --cmd 'cd ../../apps/web && npm run build' --cmd-url-env-var-name VITE_PUBLIC_CONVEX_URL
-```
-
-This:
-1. Deploys Convex backend
-2. Builds web app with production URL injected
-3. Outputs to `apps/web/dist/`
-
-**Deploy `dist/` folder** to static hosting:
-
-**Options**:
-- **Vercel**: `npx vercel --prod`
-- **Netlify**: Drag `dist/` to Netlify dashboard or `netlify deploy --prod`
-- **Cloudflare Pages**: `npx wrangler pages publish dist`
-
-**Add environment variables** to hosting platform:
-- `VITE_CLERK_PUBLISHABLE_KEY` (production key)
-- `VITE_PUBLIC_CONVEX_URL` (auto-injected during build, but verify)
-- `VITE_STRIPE_PUBLISHABLE_KEY` (live key, starts with `pk_live_`)
-
----
-
-### Step 8.6: Test Production App
-
-**Complete end-to-end test** in production:
-
-1. Visit your production URL
-2. Sign up (creates real Clerk user)
-3. Complete onboarding
-4. Create some entries
-5. Subscribe with real card
-6. Check data in Convex production dashboard
-7. Check subscription in Stripe live dashboard
-8. Test all major features
-9. Cancel subscription
-10. Verify cancellation works
-
----
-
-## Phase 9: Mobile App Deployment
-
-**Goal**: Submit native apps to App Store and Google Play.
-
-### Step 9.1: Update App Configuration
-
-**iOS** (`apps/native/app.json`):
-```json
-{
-  "expo": {
-    "name": "Your App Name",
-    "slug": "your-app-slug",
-    "version": "1.0.0",
-    "ios": {
-      "bundleIdentifier": "com.yourcompany.yourapp",
-      "buildNumber": "1"
-    }
-  }
-}
-```
-
-**Android** (`apps/native/app.json`):
-```json
-{
-  "expo": {
-    "android": {
-      "package": "com.yourcompany.yourapp",
-      "versionCode": 1
-    }
-  }
-}
-```
-
----
-
-### Step 9.2: Build Native Apps
-
-**Install EAS CLI**:
-```bash
-npm install -g eas-cli
-```
-
-**Configure builds**:
-```bash
-cd apps/native
-eas build:configure
-```
-
-**Build iOS app**:
-```bash
-eas build --platform ios --profile production
-```
-
-**Build Android app**:
-```bash
-eas build --platform android --profile production
-```
-
-This creates production `.ipa` (iOS) and `.aab` (Android) files.
-
----
-
-### Step 9.3: Prepare App Store Assets
-
-**Required for both stores**:
-- App icon (1024x1024px)
+## Phase 10: Deploy to Production
+
+Get your app live for real users.
+
+**10.1** - Deploy Convex backend to production:
+- Run: `npx convex deploy` from `packages/backend`
+- Copy the production URL
+
+**10.2** - Switch Stripe to live mode:
+- Create same products in live mode
+- Get live API keys
+- Update Convex environment variables with live keys
+- Create production webhook endpoint
+
+**10.3** - Update app to use production:
+- Change `EXPO_PUBLIC_CONVEX_URL` to production URL
+- Add production Clerk keys
+- Test everything works with production backend
+
+**10.4** - Build the production app:
+- Run: `eas build --platform ios --profile production`
+- Run: `eas build --platform android --profile production`
+
+**10.5** - Prepare App Store assets:
+- App icon (1024x1024)
 - Screenshots (various sizes)
 - App description
-- Keywords (for search)
-- Privacy policy URL
-- Support URL
+- Privacy policy
+- Support email
 
-**iOS-specific**:
-- App Store screenshots (6.5", 5.5", 12.9" iPad)
-- App preview video (optional)
+**10.6** - Submit to stores:
+- iOS: App Store Connect
+- Android: Google Play Console
+- Wait 1-3 days for review
 
-**Android-specific**:
-- Google Play screenshots (phone, 7" tablet, 10" tablet)
-- Feature graphic (1024x500px)
+**Why this matters**: Your app isn't real until people can download it from the app stores. This is the finish line.
 
 ---
 
-### Step 9.4: Submit to App Stores
+## Phase 11: Post-Launch
 
-**iOS (App Store Connect)**:
-1. Create app in App Store Connect
-2. Upload `.ipa` file (via EAS or Xcode)
-3. Fill out app information
-4. Add screenshots and description
-5. Submit for review
+Monitor your live app and make it better based on real usage.
 
-**Android (Google Play Console)**:
-1. Create app in Play Console
-2. Upload `.aab` file
-3. Fill out store listing
-4. Add screenshots and description
-5. Submit for review
+**11.1** - Check analytics daily (first week):
+- How many people sign up?
+- How many complete onboarding?
+- How many subscribe?
+- Where do people drop off?
 
-**Review time**:
-- iOS: 1-3 days typically
-- Android: Few hours to 1 day
-
----
-
-## Phase 10: Post-Launch
-
-**Goal**: Monitor, fix bugs, and iterate based on real user data.
-
-### Step 10.1: Monitor Analytics
-
-**Daily checks** (first week):
-- New signups
-- Onboarding completion rate
-- Paywall conversion rate
-- Subscription revenue
-- User retention (day 1, day 7, day 30)
-
-**Weekly checks** (ongoing):
-- Monthly recurring revenue (MRR)
-- Churn rate (% who cancel)
-- Customer acquisition cost (CAC)
-- Lifetime value (LTV)
-
-**Tools**:
-- Analytics dashboard (Posthog, Mixpanel)
-- Stripe dashboard (revenue)
-- Convex dashboard (database growth)
-
----
-
-### Step 10.2: Fix Critical Bugs
-
-**Priority bugs** (fix immediately):
-- Crashes or data loss
+**11.2** - Fix critical bugs immediately:
+- Crashes
 - Payment failures
-- Authentication issues
-- Broken core features
+- Login issues
 
-**Non-critical bugs** (fix next release):
-- UI glitches
-- Minor UX improvements
-- Edge cases
-
-**Process**:
-1. User reports bug → create issue
-2. Reproduce locally
-3. Fix and test
-4. Deploy fix to production
-5. Notify user
-
----
-
-### Step 10.3: Iterate Based on Feedback
-
-**Collect user feedback**:
-- In-app feedback form
+**11.3** - Respond to user feedback:
 - App Store reviews
-- Email support
-- User interviews
+- Support emails
+- Feature requests
 
-**Common improvements**:
-- Simplify onboarding (if completion rate < 70%)
-- Adjust paywall position (if conversion < 10%)
-- Add requested features
-- Improve unclear UI
-- Fix confusing copy
+**11.4** - Plan next version:
+- What features do people want most?
+- What's confusing that needs fixing?
+- What would make people pay?
 
-**Prioritize** based on:
-- Impact on revenue
-- Number of users affected
-- Ease of implementation
+**11.5** - Release updates regularly:
+- Every 2-4 weeks for bug fixes
+- Every 4-6 weeks for new features
 
----
-
-### Step 10.4: Plan Version 2
-
-**After 2-4 weeks** of real usage data, plan next features:
-
-**Potential v2 features**:
-- Social sharing
-- Integrations (Apple Health, Google Fit, etc.)
-- Advanced analytics
-- Team/family plans
-- API access
-- White-label options
-
-**Release cycle**:
-- Every 2-4 weeks for web
-- Every 4-6 weeks for mobile (App Store review time)
+**Why this matters**: Version 1 is never perfect. The real work starts after launch - listening to users and making your app better every week.
 
 ---
 
-## 🎯 Summary: The Complete Workflow
+## Timeline
 
-| Phase | What You're Building | Time Estimate |
-|-------|---------------------|---------------|
-| **1. Foundation** | Design exports + database schema | 1-2 days |
-| **2. UI Shell** | All pages (static, no data) | 3-5 days |
-| **3. Backend** | Convex schema + functions | 2-3 days |
-| **4. Features** | Connect UI to backend, one at a time | 1-2 weeks |
-| **5. Monetization** | Stripe paywalls in main app | 1-2 days |
-| **6. Onboarding** | First-time user experience | 3-5 days |
-| **7. Testing** | User testing, analytics, A/B tests | 3-5 days |
-| **8. Production** | Deploy web app + backend | 1 day |
-| **9. Mobile** | App Store + Google Play submission | 2-3 days |
-| **10. Post-Launch** | Monitor, fix, iterate | Ongoing |
+Realistic timeframes if you work on this full-time:
 
-**Total**: 3-6 weeks from start to production.
+- Phase 0 (Preview): 30 minutes
+- Phase 1 (Setup): 2-3 hours
+- Phase 2 (Upload designs): 1-2 hours
+- Phase 3 (Planning with Claude): 3-4 hours
+- Phase 4 (Static screens): 2-3 days
+- Phase 5 (Backend): 1-2 days
+- Phase 6 (Connect to backend): 3-5 days
+- Phase 7 (Paywalls): 1 day
+- Phase 8 (Onboarding): 2-3 days
+- Phase 9 (Testing): 2-3 days
+- Phase 10 (Deploy): 1 day
+- Phase 11 (Post-launch): Ongoing
 
----
-
-## 🚀 Quick Start Checklist
-
-**Initial Setup**:
-- [ ] Clone this template repo
-- [ ] Run `npm install`
-- [ ] Configure Clerk authentication
-- [ ] Configure Convex backend
-- [ ] (Optional) Configure Stripe payments
-
-**Phase 1-5** (Core App):
-- [ ] Export all app designs (not onboarding yet)
-- [ ] Complete database schema planning
-- [ ] Build all pages as static UI
-- [ ] Implement Convex backend
-- [ ] Connect features one at a time
-- [ ] Add Stripe paywalls in main app
-
-**Phase 6-7** (Onboarding & Testing):
-- [ ] Design onboarding flow (20-30 steps)
-- [ ] Build onboarding pages
-- [ ] Add onboarding routing logic
-- [ ] Place paywall in onboarding
-- [ ] Test with 5-10 real users
-- [ ] Add analytics tracking
-- [ ] A/B test paywall variations
-
-**Phase 8-9** (Production):
-- [ ] Deploy to production (web + backend)
-- [ ] Switch Stripe to live mode
-- [ ] Test with real payment
-- [ ] Build mobile apps (EAS)
-- [ ] Submit to App Store
-- [ ] Submit to Google Play
-
-**Phase 10** (Post-Launch):
-- [ ] Monitor analytics daily (first week)
-- [ ] Fix critical bugs immediately
-- [ ] Iterate based on user feedback
-- [ ] Plan v2 features
+**Total: 2-3 weeks from start to App Store submission**
 
 ---
 
-## 💡 Pro Tips
+## Key Success Factors
 
-### Development
-1. **Don't skip Phase 1** - Planning the database correctly saves you weeks of refactoring
-2. **Build all pages in Phase 2** - It's faster to do them all at once than piecemeal
-3. **Start with one feature in Phase 4** - Don't try to connect everything at once
-4. **Test as you go** - After each feature, test it end-to-end
-5. **Use the existing Stripe integration** - Payments are already set up, just add the paywalls
+**Get these right and everything else works:**
 
-### Onboarding (CRITICAL)
-6. **Build onboarding AFTER the core app** - You need to know what you're onboarding people TO
-7. **Target 70-90% completion rate** - This is more important than perfect features
-8. **Place paywall at 60-80% through onboarding** - After users see value, before they're tired
-9. **Use progressive disclosure** - One question per screen, don't overwhelm
-10. **A/B test everything** - Price, position, copy, trial length
-
-### Production
-11. **Test production with real money** - Use your own card to verify the full flow works
-12. **Monitor analytics daily** - First week is critical for catching issues
-13. **Respond to App Store reviews** - Especially negative ones, shows you care
-14. **Keep web and mobile in sync** - Deploy features to both platforms
-15. **Plan for iteration** - Your v1 won't be perfect, that's okay
-
-### Monetization
-16. **Free tier should be limited but functional** - Users need to see value before paying
-17. **Pro tier should be obviously better** - Make the benefits clear and compelling
-18. **Track the right metrics** - MRR, churn rate, LTV, not just signups
-19. **Optimize for revenue, not downloads** - 100 paying customers > 10,000 free users
-20. **Consider annual plans** - Higher LTV and better cash flow
+1. **Database planning** (Phase 3) - Spend the time to get this perfect
+2. **One feature at a time** (Phase 6) - Don't rush ahead
+3. **Onboarding completion** (Phase 8) - Aim for 70-90%
+4. **Real user testing** (Phase 9) - You need fresh eyes
+5. **Monitor analytics** (Phase 11) - Data tells you what to fix
 
 ---
 
-## 📚 Additional Resources
+## Web App Enhancements
 
-- [CLAUDE.md](../CLAUDE.md) - Project overview and troubleshooting
-- [ENV_MASTER.md](../ENV_MASTER.md) - Environment variable setup
-- [STRIPE_SETUP.md](../STRIPE_SETUP.md) - Stripe integration guide
-- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and fixes
+The web application includes professional pricing, account management, and subscription features.
+
+### Features Included
+
+**Navigation & Layout:**
+- Header with subscription badge (✨ Pro badge for active subscribers)
+- Pricing link visible to all users
+- Account link for signed-in users
+- Enhanced UserButton with Account and Billing menu items
+- ErrorBoundary for graceful error handling
+
+**Pages:**
+1. **Pricing Page** (`/pricing`)
+   - Public page showing monthly and annual subscription plans
+   - Professional card-based design with feature lists
+   - Monthly: $9.99/month, Annual: $39.99/year (67% savings)
+   - "Best Value" badge on annual plan
+   - Test mode notice with Stripe test card info
+   - Integration with CheckoutButton component
+   - Shows current subscription status if user is signed in
+
+2. **Account Page** (`/account`)
+   - Protected route for signed-in users
+   - Profile information (name, email, user ID)
+   - Subscription status card with:
+     - Loading state
+     - Active subscription details (using SubscriptionStatus component)
+     - "No subscription" state with CTA to pricing page
+   - Billing information (Stripe customer ID)
+   - Quick actions card with links to Dashboard and Pricing
+
+3. **Enhanced Dashboard** (`/dashboard`)
+   - Personalized welcome message
+   - Subscription status card
+   - Quick actions card (Pricing and Account links)
+   - System status section with colored cards:
+     - Clerk Authentication (green)
+     - Convex Backend (blue)
+     - Type Safety (purple)
+   - "All Systems Operational" status banner
+
+**Components:**
+- `SubscriptionBadge.tsx` - Displays "✨ Pro" badge when user has active subscription
+- `ErrorBoundary.tsx` - Catches React errors and shows recovery UI
+- Updated `Header.tsx` - Enhanced navigation with badge and custom UserButton menu
+
+**Backend Requirements:**
+All required Convex queries already exist in the template:
+- `api.stripe.subscriptions.getCurrent` - Returns subscription object or null
+- `api.stripe.subscriptions.hasActive` - Returns boolean
+- `api.stripe.customers.getCurrent` - Returns customer object or null
+
+### File Structure
+
+```
+apps/web/src/
+├── components/
+│   ├── Header.tsx (enhanced)
+│   ├── SubscriptionBadge.tsx (new)
+│   ├── ErrorBoundary.tsx (new)
+│   └── stripe/
+│       ├── CheckoutButton.tsx (existing)
+│       ├── PortalButton.tsx (existing)
+│       └── SubscriptionStatus.tsx (existing)
+├── pages/
+│   ├── Home.tsx (unchanged)
+│   ├── Dashboard.tsx (enhanced)
+│   ├── Pricing.tsx (new)
+│   └── Account.tsx (new)
+└── App.tsx (enhanced with new routes)
+```
+
+### User Experience Benefits
+
+✅ Clear separation of concerns (pricing vs dashboard vs account)
+✅ Consistent navigation across all pages
+✅ Visual feedback of subscription status (badge)
+✅ Easy subscription management from multiple places
+✅ Professional, polished design
+✅ Graceful error handling
+✅ Better component reuse (CheckoutButton, SubscriptionStatus)
+✅ Mobile-responsive design with Tailwind CSS
+
+### Testing the Web App
+
+1. Start the development server:
+   ```bash
+   cd apps/web && npm run dev
+   ```
+
+2. Visit http://localhost:5173 and test:
+   - Public pages: Home (`/`), Pricing (`/pricing`)
+   - Protected pages: Dashboard (`/dashboard`), Account (`/account`)
+   - Sign in with Clerk to access protected routes
+   - Create test subscription using Stripe test card: `4242 4242 4242 4242`
+   - Verify "✨ Pro" badge appears in header after subscription
+
+3. Build for production:
+   ```bash
+   cd apps/web && npm run build
+   ```
 
 ---
 
-**Ready to build? Start with Phase 1! 🎉**
+**Ready to start? Begin with Phase 0! 🚀**
