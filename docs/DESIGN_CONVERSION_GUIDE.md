@@ -1,0 +1,557 @@
+# Design Conversion Guide: Sleek Design to Vite + React Native
+
+This guide covers the complete process for converting Sleek Design (or Figma) exports into working Vite + React and React Native components.
+
+---
+
+## The 6-Step Conversion Checklist
+
+Use this checklist for **every** Sleek Design component you convert:
+
+### Step 1: Match Root Layout Sizing
+
+**Problem**: Components using `min-h-screen` or `h-full` don't fill viewport correctly.
+
+**Solution**: Ensure `html`, `body`, and `#root` are set to `height: 100%` in global CSS.
+
+**File**: `apps/web/src/index.css`
+
+```css
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 100%;
+  background-color: hsl(var(--background));
+}
+```
+
+**Why This Works**: Allows child components to use percentage-based heights and viewport units correctly.
+
+**Time**: 2 minutes
+
+---
+
+### Step 2: Import Shared Global Styles
+
+**Problem**: Tailwind directives and font imports are missing or in wrong order.
+
+**Solution**: Ensure the Vite entry point imports global CSS with correct structure.
+
+**File**: `apps/web/src/main.tsx`
+
+```typescript
+import './index.css'; // Must import global styles
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+```
+
+**File**: `apps/web/src/index.css`
+
+```css
+/* CRITICAL: Font imports MUST be first */
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap');
+
+/* Then Tailwind directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Then root sizing (see Step 1) */
+html, body, #root { ... }
+
+/* Then CSS variables (see Step 3) */
+:root { ... }
+```
+
+**Why Order Matters**: Vite/PostCSS requires @import statements before @tailwind directives.
+
+**Time**: 2 minutes
+
+---
+
+### Step 3: Align CSS Variables (HEX → HSL Conversion)
+
+**Problem**: Sleek Design provides colors as HEX (#7C5CFF), but Tailwind needs HSL format.
+
+**Solution**: Convert all HEX colors to HSL and update CSS variables.
+
+**Source**: Copy from Sleek Design's `globals.css`:
+```css
+:root {
+  --background: #201640;
+  --foreground: #EAE6F7;
+  --primary: #7C5CFF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #5A46D6;
+  --accent: #2DE0C6;
+  /* ... etc */
+}
+```
+
+**Conversion Table** (Example for Sleep Tracker):
+```
+HEX         → HSL
+#201640     → 263 56% 19%    (background - deep purple)
+#EAE6F7     → 265 33% 92%    (foreground - light purple)
+#7C5CFF     → 263 100% 68%   (primary - bright purple)
+#FFFFFF     → 0 0% 100%      (white)
+#5A46D6     → 262 55% 56%    (secondary - mid purple)
+#2DE0C6     → 172 82% 52%    (accent - cyan)
+#6E647E     → 272 13% 46%    (muted - gray-purple)
+#BDB4C9     → 268 18% 76%    (muted-foreground)
+#FF6B6B     → 0 100% 70%     (destructive - red)
+#2b2052     → 265 41% 24%    (card - dark purple)
+#191428     → 267 45% 12%    (popover - very dark purple)
+#1d143b     → 266 48% 15%    (input)
+#8B5CF6     → 265 59% 63%    (ring)
+```
+
+**File**: `apps/web/src/index.css`
+
+```css
+:root {
+  --background: 263 56% 19%;
+  --foreground: 265 33% 92%;
+
+  --primary: 263 100% 68%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 262 55% 56%;
+  --secondary-foreground: 0 0% 100%;
+
+  --accent: 172 82% 52%;
+  --accent-foreground: 177 89% 14%;
+
+  --muted: 272 13% 46%;
+  --muted-foreground: 268 18% 76%;
+
+  --destructive: 0 100% 70%;
+  --destructive-foreground: 0 0% 100%;
+
+  --card: 265 41% 24%;
+  --card-foreground: 265 33% 92%;
+
+  --popover: 267 45% 12%;
+  --popover-foreground: 265 33% 92%;
+
+  --border: 263 56% 19%;
+  --input: 266 48% 15%;
+  --ring: 265 59% 63%;
+
+  --font-sans: "Jost", system-ui, sans-serif;
+  --font-heading: "Jost", system-ui, sans-serif;
+
+  --radius: 0.75rem;
+}
+```
+
+**HEX to HSL Conversion Tool**: Use https://htmlcolors.com/hex-to-hsl or similar
+
+**Why HSL Format**: Tailwind's `hsl(var(--variable))` wrapper expects space-separated HSL values, not HEX.
+
+**Time**: 10 minutes (includes conversion)
+
+---
+
+### Step 4: Wire Tailwind to CSS Variables
+
+**Problem**: Tailwind doesn't automatically use CSS variables for colors.
+
+**Solution**: Map every semantic color to `hsl(var(--token))` in tailwind.config.
+
+**File**: `apps/web/tailwind.config.js`
+
+```javascript
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+      },
+      fontFamily: {
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'system-ui', 'sans-serif'],
+      },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
+      animationDelay: {
+        '0': '0ms',
+        '100': '100ms',
+        '200': '200ms',
+        '300': '300ms',
+        '400': '400ms',
+        '500': '500ms',
+        '600': '600ms',
+        '700': '700ms',
+        '800': '800ms',
+        '1000': '1000ms',
+      },
+    },
+  },
+  plugins: [
+    function({ matchUtilities, theme }) {
+      matchUtilities(
+        {
+          'delay': (value) => ({
+            'animation-delay': value,
+          }),
+        },
+        { values: theme('animationDelay') }
+      )
+    },
+  ],
+}
+```
+
+**Critical Notes**:
+1. **hsl() wrapper**: Required for Tailwind to parse CSS variables correctly
+2. **animationDelay**: Custom utilities for `delay-100`, `delay-200`, etc. classes
+3. **Custom plugin**: Generates CSS `animation-delay` properties from Tailwind classes
+4. **Content globs**: Must include all file paths where Tailwind classes are used
+
+**Why This Works**: Tailwind generates CSS like `background-color: hsl(var(--background))` which reads from CSS variables.
+
+**Time**: 5 minutes (copy-paste template)
+
+---
+
+### Step 5: Wrap Component in Mobile Frame
+
+**Problem**: Sleek Design components are designed for 375px mobile width but render full-width on desktop.
+
+**Solution**: Wrap component content in a mobile-width container.
+
+**Pattern**:
+```typescript
+export function YourScreen() {
+  return (
+    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background via-[#1a1135] to-secondary/30 text-foreground overflow-hidden relative">
+      {/* Background effects layer */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Decorative elements */}
+      </div>
+
+      {/* Content layer with mobile frame */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-8 relative z-10 w-full max-w-sm mx-auto">
+        {/* Your actual content */}
+      </div>
+
+      {/* Bottom actions */}
+      <div className="px-6 pb-8 space-y-3 relative z-10">
+        {/* Buttons, pagination, etc */}
+      </div>
+    </div>
+  );
+}
+```
+
+**Key Classes**:
+- `min-h-screen`: Full viewport height
+- `w-full max-w-sm`: Full width up to 384px (mobile size)
+- `mx-auto`: Center horizontally on desktop
+- `relative z-10`: Ensure content sits above background effects
+
+**Why This Works**: Creates a mobile-first design that scales gracefully to desktop without looking stretched.
+
+**Time**: 3 minutes (wrapper structure)
+
+---
+
+### Step 6: Verify Tailwind Version & Utilities
+
+**Problem**: Older Tailwind versions don't support utilities like `size-72` or `blur-3xl`.
+
+**Solution**: Ensure Tailwind 3.4+ is installed and verify utilities work.
+
+**File**: `apps/web/package.json`
+
+```json
+{
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  }
+}
+```
+
+**Utilities to Verify**:
+- `size-{n}`: Sets both width and height (Tailwind 3.4+)
+- `blur-xl`, `blur-2xl`, `blur-3xl`: Blur filter utilities
+- `animate-pulse`: Pulsing animation
+- `delay-{n}`: Animation delay (requires Step 4 plugin)
+- `bg-primary/20`: Color with opacity modifier
+
+**Testing**:
+1. Run `npm run dev:web`
+2. Open browser DevTools
+3. Inspect elements with blur effects
+4. Verify CSS shows `filter: blur(64px)` for `blur-3xl`
+5. Verify animations have staggered delays
+
+**Upgrade if Needed**:
+```bash
+npm install tailwindcss@latest autoprefixer@latest postcss@latest --workspace=apps/web
+```
+
+**Time**: 5 minutes (verification only, 10 if upgrading)
+
+---
+
+## Complete Example: Onboarding Screen Conversion
+
+**Before** (Sleek Design raw code):
+```typescript
+import { Icon } from "@iconify/react";
+
+export function Onboarding() {
+  return (
+    <div className="flex flex-col h-full bg-gradient-to-b from-background via-[#1a1135] to-secondary/30 text-foreground overflow-hidden relative">
+      {/* ... blur effects and stars ... */}
+      <button className="...">Get Started</button>
+    </div>
+  );
+}
+```
+
+**Issues**:
+- ❌ Colors wrong (no HSL conversion)
+- ❌ Blur effects not visible
+- ❌ Animation delays don't work (`delay-300` undefined)
+- ❌ Layout doesn't fill viewport
+- ❌ Desktop view too wide
+
+**After** (Conversion applied):
+
+1. **Updated CSS variables** (Step 3):
+   - Converted all HEX to HSL in `index.css`
+
+2. **Updated Tailwind config** (Step 4):
+   - Added `hsl(var(--color))` mappings
+   - Added animation delay plugin
+
+3. **Updated component** (Step 5):
+   - Changed `h-full` → `min-h-screen`
+   - Added `w-full max-w-sm mx-auto` wrapper
+
+4. **Result**:
+   - ✅ Perfect colors matching Sleek Design
+   - ✅ Blur effects render beautifully
+   - ✅ Staggered animations work
+   - ✅ Full viewport height
+   - ✅ Mobile-width frame on desktop
+
+**Time Investment**: ~30 minutes for first conversion, ~10 minutes for subsequent screens
+
+---
+
+## Troubleshooting Guide
+
+### Issue: Blur effects not visible
+
+**Check**:
+1. ✓ Tailwind 3.4+ installed? (`package.json`)
+2. ✓ CSS variables in HSL format? (`index.css`)
+3. ✓ Tailwind config has color mappings? (`tailwind.config.js`)
+4. ✓ Dev server restarted after config changes?
+
+**Solution**: Hard refresh browser (Cmd+Shift+R / Ctrl+F5)
+
+---
+
+### Issue: Colors are wrong
+
+**Check**:
+1. ✓ All HEX values converted to HSL? (use online converter)
+2. ✓ HSL values are space-separated? (`263 56% 19%` not `263,56%,19%`)
+3. ✓ Tailwind config uses `hsl(var(--name))`? (not just `var(--name)`)
+4. ✓ CSS variables in `:root`? (not scoped to `.dark` or other selector)
+
+**Solution**: Compare side-by-side with working example above
+
+---
+
+### Issue: Animation delays don't work
+
+**Check**:
+1. ✓ `animationDelay` object in Tailwind config?
+2. ✓ Custom plugin function added to `plugins` array?
+3. ✓ Using correct class names? (`delay-300` not `animation-delay-300`)
+
+**Solution**: Copy plugin code exactly from Step 4
+
+---
+
+### Issue: Layout doesn't fill viewport
+
+**Check**:
+1. ✓ `html, body, #root` have `height: 100%`?
+2. ✓ Component uses `min-h-screen` not `h-full`?
+3. ✓ No parent container restricting height?
+
+**Solution**: Inspect with DevTools, check parent heights
+
+---
+
+## Quick Reference: Complete File Checklist
+
+When converting Sleek Design to Vite, verify these files are configured:
+
+### Configuration Files:
+- ✓ `apps/web/src/index.css` - CSS variables (HSL), imports, Tailwind directives
+- ✓ `apps/web/tailwind.config.js` - Color mappings, animation delays, plugin
+- ✓ `apps/web/src/main.tsx` - Imports `index.css`
+- ✓ `apps/web/package.json` - Tailwind 3.4+, @iconify/react
+
+### Component Files:
+- ✓ Screen components in `apps/web/src/screens/`
+- ✓ Use `min-h-screen` for full height
+- ✓ Use `w-full max-w-sm mx-auto` for mobile frame
+- ✓ Import `Icon` from `@iconify/react`
+
+### Total Setup Time:
+- **First project**: ~30 minutes (all steps)
+- **Subsequent projects**: ~5 minutes (configuration is template-ready)
+- **Per screen conversion**: ~10 minutes after setup
+
+---
+
+## Converting to React Native (Expo)
+
+The same design principles apply, but with React Native syntax:
+
+### Key Differences:
+
+1. **No Tailwind** - Use StyleSheet or NativeWind
+2. **Colors**: Can use HEX directly or convert to RGB
+3. **Layout**: Use `flex: 1` instead of `min-h-screen`
+4. **Icons**: Use `@expo/vector-icons` or similar
+5. **Fonts**: Load with `expo-font`
+
+### Example Pattern (React Native):
+
+```typescript
+import { View, Text, StyleSheet } from 'react-native';
+
+export function YourScreen() {
+  return (
+    <View style={styles.container}>
+      <View style={styles.content}>
+        {/* Your content */}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#201640', // Can use HEX directly
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+  },
+});
+```
+
+### Using NativeWind (Tailwind for React Native):
+
+If you prefer Tailwind syntax in React Native, use NativeWind:
+
+```bash
+npm install nativewind
+npm install --save-dev tailwindcss
+```
+
+Then use the same Tailwind classes:
+
+```typescript
+import { View, Text } from 'react-native';
+
+export function YourScreen() {
+  return (
+    <View className="flex-1 bg-background px-6 pb-8">
+      <Text className="text-2xl font-heading text-foreground">
+        Welcome
+      </Text>
+    </View>
+  );
+}
+```
+
+**Note**: NativeWind still requires CSS variable conversion to work with design tokens.
+
+---
+
+## Additional Resources
+
+- **HEX to HSL Converter**: https://htmlcolors.com/hex-to-hsl
+- **Tailwind CSS Docs**: https://tailwindcss.com/docs
+- **Iconify Icons**: https://icon-sets.iconify.design/
+- **Sleek Design**: https://sleek.design
+- **NativeWind**: https://www.nativewind.dev/
+
+---
+
+## Summary
+
+The 6-step conversion process ensures:
+
+1. ✅ **Viewport fills correctly** (Step 1)
+2. ✅ **Fonts and styles load** (Step 2)
+3. ✅ **Colors match design** (Step 3)
+4. ✅ **Tailwind reads CSS variables** (Step 4)
+5. ✅ **Mobile-first responsive** (Step 5)
+6. ✅ **Modern utilities work** (Step 6)
+
+**Follow these steps in order** and you'll have pixel-perfect conversions every time.

@@ -490,6 +490,7 @@ If you encounter issues after cloning:
 ## Additional Resources
 
 - [BUILD_ROADMAP.md](./docs/BUILD_ROADMAP.md) - Complete 10-phase guide from start to App Store
+- [DESIGN_CONVERSION_GUIDE.md](./docs/DESIGN_CONVERSION_GUIDE.md) - Converting Figma/Sleek Design to Vite + React Native (hex to HSL, Tailwind setup, mobile frame)
 - [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) - Comprehensive troubleshooting guide with setup fixes
 - [ENV_MASTER.md](./ENV_MASTER.md) - Complete environment variable guide
 - [STRIPE_SETUP.md](./STRIPE_SETUP.md) - Stripe integration guide

@@ -372,9 +372,11 @@ All of these issues have been fixed in the current template:
 
 ## Additional Resources
 
+- [DESIGN_CONVERSION_GUIDE.md](./DESIGN_CONVERSION_GUIDE.md) - Converting Figma/Sleek Design to Vite + React Native (hex to HSL, Tailwind setup)
 - [ENV_MASTER.md](../ENV_MASTER.md) - Complete environment variable reference
 - [STRIPE_SETUP.md](../STRIPE_SETUP.md) - Stripe integration guide
 - [CLAUDE.md](../CLAUDE.md) - Project overview and development guide
+- [BUILD_ROADMAP.md](./BUILD_ROADMAP.md) - Complete guide from template to App Store
 - [Convex Documentation](https://docs.convex.dev/)
 - [Clerk Documentation](https://clerk.com/docs)
 - [Vite Documentation](https://vite.dev/)

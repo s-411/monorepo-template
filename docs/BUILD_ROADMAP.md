@@ -69,11 +69,17 @@ Upload all your app screens from Sleek.Design (or wherever you designed them).
 
 **2.3** - Copy all exported screen files into this folder
 
-**2.4** - Create a simple list somewhere to see all your screens:
+**2.4** - **CRITICAL**: Follow the [Design Conversion Guide](./DESIGN_CONVERSION_GUIDE.md) to convert designs properly:
+- Convert HEX colors to HSL format (Step 3)
+- Configure Tailwind with CSS variables (Step 4)
+- Set up mobile frame wrapper (Step 5)
+- Verify all utilities work (Step 6)
+
+**2.5** - Create a simple list somewhere to see all your screens:
 - This helps you visualize what you're building
 - Just a temporary navigation list
 
-**Why this matters**: You designed the app for a reason. Having all the screens ready means you can focus on making them work, not designing them from scratch.
+**Why this matters**: You designed the app for a reason. Having all the screens ready means you can focus on making them work, not designing them from scratch. The Design Conversion Guide ensures pixel-perfect implementation without troubleshooting color/layout issues later.
 
 ---
 
