@@ -1,12 +1,9 @@
 import { View, StatusBar, Platform } from "react-native";
 import { useFonts } from "expo-font";
-import { LogBox } from "react-native";
 import Navigation from "./src/navigation/Navigation";
 import ConvexClientProvider from "./ConvexClientProvider";
 
 export default function App() {
-  LogBox.ignoreLogs(["Warning: ..."]);
-  LogBox.ignoreAllLogs();
 
   const [loaded] = useFonts({
     Bold: require("./src/assets/fonts/Inter-Bold.ttf"),
