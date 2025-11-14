@@ -327,15 +327,116 @@ This is a **minimal starter template**, not a feature-complete application. The 
 
 ## Troubleshooting
 
+### "Invalid hook call" error (CRITICAL)
+
+**Problem**: App crashes immediately with error:
+```
+Invalid hook call. Hooks can only be called inside of the body of a function component.
+This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+```
+
+**Root Cause**: Multiple versions of React are installed (19.1.0 and 19.2.0) due to npm's dependency resolution. Dependencies like `@clerk/clerk-react`, `@radix-ui/*`, and `react-router-dom` may resolve to different React versions.
+
+**Solution**: Add npm overrides to the root `package.json`:
+```json
+{
+  "name": "convex-monorepo",
+  "overrides": {
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  }
+}
+```
+
+Then reinstall dependencies:
+```bash
+rm -rf node_modules package-lock.json apps/*/node_modules apps/*/package-lock.json packages/*/node_modules packages/*/package-lock.json
+npm install
+```
+
+**Verify the fix**: Run `npm ls react` - you should see only one version (19.2.0) throughout the tree.
+
+### Convex deployment fails with "Neither apiKey nor config.authenticator provided"
+
+**Problem**: Backend deployment fails with:
+```
+Failed to analyze http.js: Uncaught Error: Neither apiKey nor config.authenticator provided
+at new Stripe (../../../../node_modules/stripe/esm/stripe.core.js:109:4)
+```
+
+**Root Cause**: The Stripe client in `packages/backend/convex/stripe/config.ts` was initialized immediately when the module loaded, but `STRIPE_SECRET_KEY` doesn't exist during initial setup.
+
+**Solution**: This has been fixed in the template with lazy initialization. The Stripe client is now created only when actually needed:
+
+```typescript
+// ✅ Lazy initialization (current template)
+let _stripe: Stripe | null = null;
+export const stripe = (): Stripe => {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error(
+        missingEnvVariableUrl(
+          "STRIPE_SECRET_KEY",
+          "https://dashboard.stripe.com/apikeys"
+        )
+      );
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-02-24.acacia",
+    });
+  }
+  return _stripe;
+};
+```
+
+All Stripe usages call `stripe()` as a function: `stripe().customers.create()` instead of `stripe.customers.create()`.
+
+**Why this matters**: Stripe is optional in the template and shouldn't block initial deployment. You only need Stripe keys when actually using payment features.
+
+### React Router v7 warnings
+
+**Problem**: Console warnings about upcoming React Router changes:
+```
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7
+```
+
+**Solution**: Add future flags to `BrowserRouter` in `apps/web/src/App.tsx`:
+```typescript
+<BrowserRouter
+  future={{
+    v7_startTransition: true,
+    v7_relativeSplatPath: true,
+  }}
+>
+  {/* routes */}
+</BrowserRouter>
+```
+
+### Stripe API version TypeScript error
+
+**Problem**: TypeScript error when building:
+```
+Type '"2024-11-20.acacia"' is not assignable to type '"2025-02-24.acacia"'
+```
+
+**Solution**: The template now uses the latest Stripe API version (`2025-02-24.acacia`) in `packages/backend/convex/stripe/config.ts`. Ensure your Stripe package is up to date:
+```bash
+cd packages/backend && npm install stripe@latest
+```
+
 ### Build errors in backend package
 
 If you see TypeScript errors when building, the build script uses `vite build` (not `tsc`) to avoid strict type checking during development.
 
 ### Environment variables not working
 
-- Web: Restart Vite dev server, ensure `VITE_` prefix
-- Native: Restart Expo completely (`npm run dev` again), ensure `EXPO_PUBLIC_` prefix
-- Backend: Add to Convex dashboard, not `.env` files
+- **Web**: Restart Vite dev server, ensure `VITE_` prefix
+- **Native**: Restart Expo completely (`npm run dev` again), ensure `EXPO_PUBLIC_` prefix
+- **Backend**: Add to Convex dashboard, not `.env` files
 
 ### Clerk authentication fails
 
@@ -349,9 +450,38 @@ If you see TypeScript errors when building, the build script uses `vite build` (
 - Ensure webhook endpoint URL is correct: `https://your-deployment.convex.cloud/stripe/webhook`
 - Check Stripe dashboard → Webhooks for delivery attempts and errors
 
+### General debugging steps
+
+If you encounter issues after cloning:
+
+1. **Clean install**:
+   ```bash
+   rm -rf node_modules package-lock.json apps/*/node_modules apps/*/package-lock.json packages/*/node_modules packages/*/package-lock.json
+   npm install
+   ```
+
+2. **Verify React version**:
+   ```bash
+   npm ls react
+   # Should show only 19.2.0 throughout the tree
+   ```
+
+3. **Check environment files exist**:
+   ```bash
+   ls apps/web/.env.local
+   ls apps/native/.env.local
+   ls packages/backend/.env.local
+   ```
+
+4. **Verify Convex deployment**:
+   ```bash
+   cd packages/backend && npx convex dev
+   # Should connect without errors
+   ```
+
 ## Additional Resources
 
-- [README.md](./README.md) - Full project documentation
+- [TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) - Comprehensive troubleshooting guide with setup fixes
 - [ENV_MASTER.md](./ENV_MASTER.md) - Complete environment variable guide
 - [STRIPE_SETUP.md](./STRIPE_SETUP.md) - Stripe integration guide
 - [Convex Documentation](https://docs.convex.dev/)
